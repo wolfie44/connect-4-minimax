@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 
+// Handle all the data-side of the game
 public class BoardManager : Singleton<BoardManager>
 {
     [SerializeField] public int RowsNumber = 6;
@@ -9,13 +10,14 @@ public class BoardManager : Singleton<BoardManager>
 
     private Token[,] Matrix;
 
-
+    // Events others script will subscribe
     public UnityAction BoardIsFull;
     public UnityAction<List<Token>> HasAWinner;
+    
     public bool FlagWin = false;
 
-
-    public BoardManager()
+    #region ----- Modifications Board
+    public void Init()
     {
         Matrix = new Token[RowsNumber, ColumnsNumber];
         BoardHelper.FillBoard(Matrix);
@@ -23,6 +25,7 @@ public class BoardManager : Singleton<BoardManager>
 
     public void CleanBoard()
     {
+        FlagWin = false;
         foreach (Token token in Matrix)
         {
             Destroy(token.VisualToken);
@@ -31,14 +34,12 @@ public class BoardManager : Singleton<BoardManager>
         Matrix = new Token[RowsNumber, ColumnsNumber];
         BoardHelper.FillBoard(Matrix);
     }
-
-
-    #region ----- Modifications Board
+   
     public bool TryAddToken(Token token, int column)
     {
         if ((token.IdOwner != 0 && token.IdOwner != 1) || column >= ColumnsNumber || column < 0)
         {
-            Debug.LogError("Error from Update Board");
+            Debug.Log("Error from Update Board");
             return false;
         }
 
@@ -49,13 +50,14 @@ public class BoardManager : Singleton<BoardManager>
         }
    
         int rowDropped = BoardHelper.AddToken(Matrix, token, column);
-
-        CheckIfWin(token, rowDropped, column);
-        Debug.Log("GAME BOARD");
-        BoardHelper.PrintBoard(Matrix);
+        CheckVictory(token, rowDropped, column);
+        // Debug.Log("GAME BOARD");
+        // BoardHelper.PrintBoard(Matrix);
         return true;
     }
+    #endregion
 
+    #region ----- Utilities
     public List<int> GetDropPossibles()
     {
         List<int> drops = BoardHelper.ComputeDropPossibles(Matrix);
@@ -68,6 +70,7 @@ public class BoardManager : Singleton<BoardManager>
         BoardHelper.PrintBoard(Matrix);
     }
 
+    // Return a copy of the board for the IA belief system
     public Token[,] GetEnvironnementObservation()
     {
         int rows = Matrix.GetLength(0);
@@ -83,29 +86,17 @@ public class BoardManager : Singleton<BoardManager>
         }
         return copy;
     }
-
     #endregion
 
-    #region Victory Conditions
-    private void CheckIfWin(Token token, int row, int column)
-    {
-        if(IsVictoryLine(BoardHelper.CheckHorizontally(Matrix, token, row, column))) return;
-        if(IsVictoryLine(BoardHelper.CheckVertically(Matrix, token, row, column))) return;
-        if(IsVictoryLine(BoardHelper.CheckDiagL(Matrix, token, row, column))) return;
-        if(IsVictoryLine(BoardHelper.CheckDiagR(Matrix, token, row, column))) return;
-        return;
-    }
-
-    private bool IsVictoryLine(List<Token> list)
-    {
-        if(list.Count == 4) 
+    #region Victory Conditions  
+    private void CheckVictory(Token token, int row, int column)
+    { 
+        if(BoardHelper.CheckVictory(Matrix))
         {
+            List<Token> winningLine = BoardHelper.GetWinningSequence(Matrix, token.IdOwner);
             FlagWin = true;
-            HasAWinner?.Invoke(list);
-            return true;
+            HasAWinner?.Invoke(winningLine);
         }
-        return false;
     }
     #endregion
-
 }
