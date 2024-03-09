@@ -1,12 +1,14 @@
 ﻿ using UnityEngine;
  using System;
 
+
+[Serializable]
 public class Token : ICloneable
 {
     public GameObject VisualToken { get; set; }
-    public int IdOwner { get; set; }
+    public ulong IdOwner { get; set; }
 
-    public Token(GameObject gameObject, int owner)
+    public Token(GameObject gameObject, ulong owner)
     {
         VisualToken = gameObject;
         IdOwner = owner;

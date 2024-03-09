@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Data;
 
+// Utils function to work with a Token[,]
 public class BoardHelper
 {
-
+    // 9 is used here to note an empty space
     public static void FillBoard(Token[,] matrix)
     {
         for(int i = 0; i < matrix.GetLength(0); i++)
@@ -17,6 +19,7 @@ public class BoardHelper
         }
     }
 
+    // Return all columns not completly full 
     public static List<int> ComputeDropPossibles(Token[,] matrix)
     {
         List<int> dropPossibles = new List<int>();
@@ -31,7 +34,7 @@ public class BoardHelper
         return dropPossibles;
     }
 
-    
+    // Add player token to board, 0 or 1
     public static int AddToken(Token[,] matrix, Token token, int column)
     {
         int rowDropped = matrix.GetLength(0) - 1;
@@ -47,116 +50,183 @@ public class BoardHelper
         return rowDropped;
     }
 
+    // Cancel a player play
     public static void RemoveToken(Token[,] matrix, int row, int column)
     {
-        matrix[row, column] = new Token(null,9);
+        matrix[row, column] = new Token(null, 9);
     }
 
-    public static List<Token> CheckHorizontally(Token[,] matrix,Token token, int row, int column)
+    // Return the first sequence of 4 token for a given player
+    public static List<Token> GetWinningSequence(Token[,] matrix, ulong player)
     {
-        List<Token> lineWinning = new List<Token>();
-        int x = 1;
-        bool stop = column - x < 0;
+        List<Token> winningSequence = new List<Token>();
 
-        lineWinning.Add(token);
+        int rows = matrix.GetLength(0);
+        int colums = matrix.GetLength(1);       
 
-        while (stop == false && matrix[row, column - x].IdOwner == token.IdOwner )
+        // Check horizontally
+        for (int row = 0; row < rows; row++)
         {
-            lineWinning.Add(matrix[row, column - x]);
-            x++;
-            stop |= column - x < 0;
+            for (int col = 0; col < colums - 3; col++)
+            {
+                if (matrix[row, col].IdOwner == player && 
+                    matrix[row, col + 1].IdOwner == player &&
+                    matrix[row, col + 2].IdOwner == player && 
+                    matrix[row, col + 3].IdOwner == player)
+                {
+                    winningSequence.Add(matrix[row, col]);
+                    winningSequence.Add(matrix[row, col + 1]);
+                    winningSequence.Add(matrix[row, col + 2]);
+                    winningSequence.Add(matrix[row, col + 3]);
+                    return winningSequence;
+                }
+            }
         }
 
-        x = 1;
-        stop = column + x >= matrix.GetLength(1);
-        while (stop == false && matrix[row, column + x].IdOwner == token.IdOwner )
+        // Check vertically
+        for (int col = 0; col < colums; col++)
         {
-            lineWinning.Add(matrix[row, column + x]);
-            x++;
-            stop |= column + x >= matrix.GetLength(1);
+            for (int row = 0; row < rows - 3; row++)
+            {
+                if (matrix[row, col].IdOwner == player && 
+                    matrix[row + 1, col].IdOwner == player &&
+                    matrix[row + 2, col].IdOwner == player && 
+                    matrix[row + 3, col].IdOwner == player)
+                {
+                    winningSequence.Add(matrix[row, col]);
+                    winningSequence.Add(matrix[row + 1, col]);
+                    winningSequence.Add(matrix[row + 2, col]);
+                    winningSequence.Add(matrix[row + 3, col]);
+                    return winningSequence;
+                }
+            }
         }
 
-        return lineWinning;
+        // Check diagonally, bottom left to top right ++ ++
+        for (int row = 0; row < rows - 3; row++)
+        {
+            for (int col = 0; col < colums - 3; col++)
+            {
+                if (matrix[row, col].IdOwner == player && 
+                    matrix[row + 1, col + 1].IdOwner == player &&
+                    matrix[row + 2, col + 2].IdOwner == player && 
+                    matrix[row + 3, col + 3].IdOwner == player)
+                {
+                    winningSequence.Add(matrix[row, col]);
+                    winningSequence.Add(matrix[row + 1, col + 1]);
+                    winningSequence.Add(matrix[row + 2, col + 2]);
+                    winningSequence.Add(matrix[row + 3, col + 3]);
+                    return winningSequence;
+                }
+            }
+        }
+
+        // Check diagonally, top left to bottom right -- ++
+        for (int row = 3; row < rows; row++)
+        {
+            for (int col = 0; col < colums - 3; col++)
+            {
+                if (matrix[row, col].IdOwner == player && 
+                    matrix[row - 1, col + 1].IdOwner == player &&
+                    matrix[row - 2, col + 2].IdOwner == player && 
+                    matrix[row - 3, col + 3].IdOwner == player)
+                {
+                    winningSequence.Add(matrix[row, col]);
+                    winningSequence.Add(matrix[row - 1, col + 1]);
+                    winningSequence.Add(matrix[row - 2, col + 2]);
+                    winningSequence.Add(matrix[row - 3, col + 3]);
+                    return winningSequence;
+                }
+            }
+        }
+
+        return null;
     }
 
-    public static List<Token> CheckVertically(Token[,] matrix, Token token, int row, int column)
+    // Return status of the board (victory or not)
+    // Similar to GetWinningSequence but more efficient because used by the IA
+    public static bool CheckVictory(Token[,] matrix)
     {
-        List<Token> lineWinning = new List<Token>();
-        int x = 1;
-        bool stop = row - x < 0;
-        lineWinning.Add(token);
+        ulong player = 0;
+        int rows = matrix.GetLength(0);
+        int colums = matrix.GetLength(1);
 
-        while (stop == false && matrix[row - x, column].IdOwner == token.IdOwner )
+        // Check horizontally
+        for (int row = 0; row < rows; row++)
         {
-            lineWinning.Add(matrix[row - x, column]);
-            x++;
-            stop |= row - x < 0;
+            for (int col = 0; col < colums - 3; col++)
+            {
+                player = matrix[row, col].IdOwner;
+
+                if (player != 9 && 
+                    matrix[row, col].IdOwner == player && 
+                    matrix[row, col + 1].IdOwner == player &&
+                    matrix[row, col + 2].IdOwner == player && 
+                    matrix[row, col + 3].IdOwner == player)
+                {
+                    return true;
+                }
+            }
         }
 
-        x = 1;
-        stop = row + x >= matrix.GetLength(0);
-        while (stop == false && matrix[row + x, column].IdOwner == token.IdOwner )
+        // Check vertically
+        for (int col = 0; col < colums; col++)
         {
-            lineWinning.Add(matrix[row + x, column]);
-            x++;
-            stop |= row + x >= matrix.GetLength(0);
+            for (int row = 0; row < rows - 3; row++)
+            {
+                player = matrix[row, col].IdOwner;
+
+                if (player != 9 && 
+                    matrix[row, col].IdOwner == player && 
+                    matrix[row + 1, col].IdOwner == player &&
+                    matrix[row + 2, col].IdOwner == player && 
+                    matrix[row + 3, col].IdOwner == player)
+                {
+                    return true;
+                }
+            }
         }
 
-        return lineWinning;
+        // Check diagonally, bottom left to top right ++ ++
+        for (int row = 0; row < rows - 3; row++)
+        {
+            for (int col = 0; col < colums - 3; col++)
+            {
+                player = matrix[row, col].IdOwner;
+                
+                if (player != 9 && 
+                    matrix[row, col].IdOwner == player && 
+                    matrix[row + 1, col + 1].IdOwner == player &&
+                    matrix[row + 2, col + 2].IdOwner == player && 
+                    matrix[row + 3, col + 3].IdOwner == player)
+                {
+                    return true;
+                }
+            }
+        }
+
+        // Check diagonally, top left to bottom right -- ++
+        for (int row = 3; row < rows; row++)
+        {
+            for (int col = 0; col < colums - 3; col++)
+            {
+                player = matrix[row, col].IdOwner;
+
+                if (player != 9 && 
+                    matrix[row, col].IdOwner == player && 
+                    matrix[row - 1, col + 1].IdOwner == player &&
+                    matrix[row - 2, col + 2].IdOwner == player && 
+                    matrix[row - 3, col + 3].IdOwner == player)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
-    public static List<Token> CheckDiagL(Token[,] matrix, Token token, int row, int column)
-    {
-        List<Token> lineWinning = new List<Token>();
-        int x = 1; 
-        bool stop = row - x < 0 || column - x < 0;
-        lineWinning.Add(token);
-
-        while (stop == false && matrix[row - x, column - x].IdOwner == token.IdOwner )
-        {
-            lineWinning.Add(matrix[row - x, column - x]);
-            x++;
-            stop |= row - x < 0 || column - x < 0;
-        }
-
-        x = 1;
-        stop = row + x >= matrix.GetLength(0) || column + x >= matrix.GetLength(1);
-        while (stop == false && matrix[row + x, column + x].IdOwner == token.IdOwner )
-        {
-            lineWinning.Add(matrix[row + x, column + x]);
-            x++;
-            stop |= row + x >= matrix.GetLength(0) || column + x >= matrix.GetLength(1);
-        }
-
-        return lineWinning;
-    }
-
-    public static List<Token> CheckDiagR(Token[,] matrix, Token token, int row, int column)
-    {
-        List<Token> lineWinning = new List<Token>();
-        int x = 1;
-        bool stop = row + x >= matrix.GetLength(0) || column - x < 0;
-        lineWinning.Add(token);
-
-        while (stop == false && matrix[row + x, column - x].IdOwner == token.IdOwner )
-        {
-            lineWinning.Add(matrix[row + x, column - x]);
-            x++;
-            stop |= row + x >= matrix.GetLength(0) || column - x < 0;
-        }
-
-        x = 1;
-        stop = row - x < 0 || column + x >= matrix.GetLength(1);
-        while (stop == false && matrix[row - x, column + x].IdOwner == token.IdOwner )
-        {
-            lineWinning.Add(matrix[row - x, column + x]);
-            x++;
-            stop |= row - x < 0 || column + x >= matrix.GetLength(1);
-        }
-
-        return lineWinning;
-    }
-
+    // DEBUG PRINT BOARD
     public static void PrintBoard(Token[,] matrix)
     {
         string print = "\n";

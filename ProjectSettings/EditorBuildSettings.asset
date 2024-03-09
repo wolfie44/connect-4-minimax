@@ -9,6 +9,15 @@ EditorBuildSettings:
     path: Assets/Scenes/Menu.unity
     guid: bbb3bb437f71a4f4797da4ae4f301477
   - enabled: 1
-    path: Assets/Scenes/Game.unity
+    path: Assets/Scenes/GameLocal.unity
     guid: eeea83e4fb9534b38badd28e79440ecf
+  - enabled: 1
+    path: Assets/Scenes/MenuNetwork.unity
+    guid: 2b0da64282e2347d0b191a98521336fd
+  - enabled: 1
+    path: Assets/Scenes/NetBootstrap.unity
+    guid: 6f007bdec102b4e8dbed910b6fb791af
+  - enabled: 1
+    path: Assets/Scenes/GameNetwork.unity
+    guid: 55421e14a31694428a544d0a4af8aad8
   m_configObjects: {}

@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 2
   tags:
   - StopPlayer
+  - Column
   layers:
   - Default
   - TransparentFX
@@ -12,11 +13,11 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
+  - Bounds
+  - Player
   - PostProcessing
-  - 
-  - 
+  - Dummy
+  - Token
   - 
   - 
   - 
